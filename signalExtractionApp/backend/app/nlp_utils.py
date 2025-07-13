@@ -11,27 +11,25 @@ from dotenv import load_dotenv
 from keybert import KeyBERT
 from sentence_transformers import SentenceTransformer
 
+from transformers import pipeline
+
+_finbert = pipeline(
+    "sentiment-analysis",
+    model="yiyanghkust/finbert-tone",
+    top_k=None,
+    truncation=True,
+    max_length=512) 
+
+_LABEL2VAL = {"positive": 1.0, "negative": -1.0, "neutral": 0.0,
+              "Positive": 1.0, "Negative": -1.0, "Neutral": 0.0}
+
+
 _END_PUNCT = re.compile(r"(?<=[.!?])\s+")
 load_dotenv()
 
 
 
-import google.generativeai as genai
-
-"""
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"),
-                transport="grpc")  # gRPC is faster & avoids some HTTP quirks
-
-for m in genai.list_models():
-    if "generateContent" in m.supported_generation_methods:
-        print(m.name)
-"""
-
-
-
 MAX_CHARS = 70000 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("models/gemini-1.5-flash")
 
 kw_model = KeyBERT(SentenceTransformer("all-MiniLM-L6-v2"))
 
@@ -55,22 +53,21 @@ def _chunks(text, size=MAX_CHARS):
     for i in range(0, len(text), size):
         yield text[i : i + size]
 
+# nlp_utils.py  –  replace run_sentiment with this version
+from statistics import mean
+
 def run_sentiment(text: str) -> float:
     scores = []
-    for chunk in _chunks(text):
-        prompt = (
-            "Rate the overall sentiment of the following passage on a scale "
-            "-1 (negative) to 1 (positive). Respond with JUST the number.\n\n"
-            + chunk
-        )
-        resp = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0,
-                max_output_tokens=16,
-            ),
-        )
-        scores.append(float(resp.text.strip()))
+
+    for chunk in _chunks(text, size=2000): 
+        result = _finbert(chunk[:512])[0]    
+
+        s = sum(_LABEL2VAL[d["label"]] * d["score"] for d in result)
+
+        print(s)
+
+        scores.append(s)
+
     return sum(scores) / len(scores)
 
 def extract_keywords(text: str, top_n: int = 10):
