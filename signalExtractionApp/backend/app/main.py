@@ -1,8 +1,10 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
 import requests
+
+import nlp_utils
 
 app = FastAPI()
 
@@ -36,3 +38,19 @@ def transcript(
         return {"error": "Failed to fetch transcript", "status_code": response.status_code, "details": response.text}
     
     return response.json()
+
+@app.get("/analyze_sentiment")
+def analyze_sentiment(
+    ticker: str = Query("NVDA"),
+    year: int = Query(...),
+    quarter: int = Query(...)
+):
+    earnings_call_url = f"https://api.api-ninjas.com/v1/earningstranscript?ticker={ticker}&year={year}&quarter={quarter}"
+    earnings_call_request = requests.get(earnings_call_url, headers={"X-Api_Key", API_NINJAS_API_KEY})
+    if earnings_call_request.status_code != 200:
+        raise HTTPException(earnings_call_request.status_code, earnings_call_request.text)
+    
+    raw_transcript = earnings_call_request.json().get("transcript", "")
+    if raw_transcript == "":
+        raise HTTPException(404, "Transcript missing")
+    
