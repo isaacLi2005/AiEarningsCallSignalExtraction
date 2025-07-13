@@ -1,0 +1,14 @@
+# Python
+backend/.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Node.js
+frontend/node_modules/
+dist/
+
+# General
+.env
+*.log
+.DS_Store
