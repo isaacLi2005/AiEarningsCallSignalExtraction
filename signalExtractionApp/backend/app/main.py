@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 
@@ -63,7 +63,6 @@ def analyze_sentiment(
     year: int,
     quarter: int
 ):
-    start_time = time.time()
 
     key = _cache_key(ticker, year, quarter)
 
@@ -77,9 +76,27 @@ def analyze_sentiment(
     if earnings_call_request.status_code != 200:
         raise HTTPException(earnings_call_request.status_code, earnings_call_request.text)
     
+    data = earnings_call_request.json()
+    if isinstance(data, list):  # Sometimes it comes back as a list. 
+        match = next(
+            (item for item in data
+                if item.get("year") == year and item.get("quarter") == quarter),
+            None
+        )
+        if not match:
+            raise HTTPException(404, "Transcript not found in list response")
+        raw_transcript = match.get("transcript", "")
+    else: 
+        raw_transcript = data.get("transcript", "")
+
+    if not raw_transcript:
+        raise HTTPException(404, "Transcript missing")
+    
+    """
     raw_transcript = earnings_call_request.json().get("transcript", "")
     if raw_transcript == "":
         raise HTTPException(404, "Transcript missing")
+    """
     
     transcript_text = nlp_utils.preprocess(raw_transcript)
 
@@ -87,7 +104,6 @@ def analyze_sentiment(
     keywords = nlp_utils.extract_keywords(transcript_text)
 
 
-    print(f"analyze_sentiment() time: {time.time() - start_time:.4f} seconds")
 
     result = {
         "ticker": ticker,
@@ -102,17 +118,29 @@ def analyze_sentiment(
 
     return result
 
-
 def try_transcript_exists(ticker: str, year: int, quarter: int) -> bool:
-    """
-    Tries to see if a transcript exists from api-ninjas. 
-    """
-    url = f"https://api.api-ninjas.com/v1/earningstranscript?ticker={ticker}&year={year}&quarter={quarter}"
-    response = requests.get(url, headers={"X-Api-Key": API_NINJAS_API_KEY})
-    return response.status_code == 200
+    url = (
+        f"https://api.api-ninjas.com/v1/earningstranscript?"
+        f"ticker={ticker}&year={year}&quarter={quarter}"
+    )
+    r = requests.get(url, headers={"X-Api-Key": API_NINJAS_API_KEY})
+    if r.status_code != 200:
+        return False
+
+    data = r.json()
+    if isinstance(data, list):
+        # Only true if THIS year/quarter is in the list
+        return any(
+            item.get("year") == year and item.get("quarter") == quarter
+            for item in data
+        )
+    elif isinstance(data, dict):
+        # Dict shape means exact match
+        return bool(data.get("transcript"))
+    return False
 
 def guess_latest_quarters(ticker="NVDA", n=4) -> list[tuple[int, int]]:
-    today = datetime.now()
+    today = datetime.now(timezone.utc)
     q = (today.month - 1) // 3 + 1
     y = today.year
     quarters = []
@@ -149,10 +177,9 @@ def analyze_last_n_quarters_sentiment(
     if (year is None) != (quarter is None):
         raise HTTPException(400, "year and quarter must be provided together (or neither).")
 
-    
     if (year is None):
         assert(quarter is None)
-        latest_quarters_list = guess_latest_quarters()
+        latest_quarters_list = guess_latest_quarters(ticker=ticker, n=n)
     else:
         y, q = year, quarter
         latest_quarters_list = []
@@ -162,7 +189,7 @@ def analyze_last_n_quarters_sentiment(
             if q == 0:
                 q = 4
                 y -= 1
-    latest_quarters_list.reverse()
+        latest_quarters_list.reverse()
     
     nlp_results = []
     for i in range(n):
