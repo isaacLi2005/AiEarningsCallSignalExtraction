@@ -4,10 +4,17 @@ import os
 from dotenv import load_dotenv
 import requests
 
+
+
 load_dotenv()
 API_NINJAS_API_KEY = os.getenv("API_NINJAS_KEY")
 
 from app import nlp_utils
+
+
+import time
+from cachetools import LRUCache
+from threading import Lock
 
 
 app = FastAPI()
@@ -39,12 +46,29 @@ def transcript(
     
     return response.json()
 
+
+
+_CACHE: LRUCache[str, dict] = LRUCache(maxsize=32)
+_CACHE_LOCK = Lock()
+def _cache_key(ticker: str, year: int, quarter: int) -> str:
+    return f"{ticker.upper()}:{year}:Q{quarter}"
+
+
 @app.get("/analyze_sentiment")
 def analyze_sentiment(
     ticker: str = Query("NVDA"),
     year: int = Query(...),
     quarter: int = Query(...)
 ):
+    start_time = time.time()
+
+    key = _cache_key(ticker, year, quarter)
+
+    with _CACHE_LOCK:
+        if key in _CACHE:
+            return _CACHE[key]
+
+
     earnings_call_url = f"https://api.api-ninjas.com/v1/earningstranscript?ticker={ticker}&year={year}&quarter={quarter}"
     earnings_call_request = requests.get(earnings_call_url, headers={"X-Api-Key": API_NINJAS_API_KEY})
     if earnings_call_request.status_code != 200:
@@ -59,11 +83,19 @@ def analyze_sentiment(
     sentiment_output = nlp_utils.run_sentiment(transcript_text)
     keywords = nlp_utils.extract_keywords(transcript_text)
 
-    return {
+
+    print(f"analyze_sentiment() time: {time.time() - start_time:.4f} seconds")
+
+    result = {
         "ticker": ticker,
         "year": year,
         "quarter": quarter,
         "sentiment": sentiment_output,
         "keywords": keywords
     }
+
+    with _CACHE_LOCK:
+        _CACHE[key] = result
+
+    return result
     
