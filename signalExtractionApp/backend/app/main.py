@@ -56,67 +56,53 @@ _CACHE_LOCK = Lock()
 def _cache_key(ticker: str, year: int, quarter: int) -> str:
     return f"{ticker.upper()}:{year}:Q{quarter}"
 
-
-
-def analyze_sentiment(
-    ticker: str,
-    year: int,
-    quarter: int
-):
-
+def analyze_sentiment(ticker: str, year: int, quarter: int):
     key = _cache_key(ticker, year, quarter)
 
     with _CACHE_LOCK:
         if key in _CACHE:
             return _CACHE[key]
 
+    url = f"https://api.api-ninjas.com/v1/earningstranscript?ticker={ticker}&year={year}&quarter={quarter}"
+    r = requests.get(url, headers={"X-Api-Key": API_NINJAS_API_KEY})
+    if r.status_code != 200:
+        raise HTTPException(r.status_code, r.text)
 
-    earnings_call_url = f"https://api.api-ninjas.com/v1/earningstranscript?ticker={ticker}&year={year}&quarter={quarter}"
-    earnings_call_request = requests.get(earnings_call_url, headers={"X-Api-Key": API_NINJAS_API_KEY})
-    if earnings_call_request.status_code != 200:
-        raise HTTPException(earnings_call_request.status_code, earnings_call_request.text)
-    
-    data = earnings_call_request.json()
-    if isinstance(data, list):  # Sometimes it comes back as a list. 
-        match = next(
+    data = r.json()                       # **keep entire dict**
+    if isinstance(data, list):            # free tier sometimes returns list
+        data = next(
             (item for item in data
-                if item.get("year") == year and item.get("quarter") == quarter),
+             if item.get("year") == year and item.get("quarter") == quarter),
             None
-        )
-        if not match:
-            raise HTTPException(404, "Transcript not found in list response")
-        raw_transcript = match.get("transcript", "")
-    else: 
-        raw_transcript = data.get("transcript", "")
-
+        ) or {}
+    raw_transcript = data.get("transcript", "")
     if not raw_transcript:
         raise HTTPException(404, "Transcript missing")
-    
-    """
-    raw_transcript = earnings_call_request.json().get("transcript", "")
-    if raw_transcript == "":
-        raise HTTPException(404, "Transcript missing")
-    """
-    
-    transcript_text = nlp_utils.preprocess(raw_transcript)
 
-    sentiment_output = nlp_utils.run_sentiment(transcript_text)
-    keywords = nlp_utils.extract_keywords(transcript_text)
+    mgmt_raw, qa_raw = nlp_utils.split_management_qa(data)
 
+    mgmt_text = nlp_utils.preprocess(mgmt_raw)
+    qa_text   = nlp_utils.preprocess(qa_raw)
 
+    mgmt_sent = nlp_utils.run_sentiment(mgmt_text)
+    qa_sent   = nlp_utils.run_sentiment(qa_text)
+    mgmt_kw   = nlp_utils.extract_keywords(mgmt_text)
+    qa_kw     = nlp_utils.extract_keywords(qa_text)
 
     result = {
         "ticker": ticker,
         "year": year,
         "quarter": quarter,
-        "sentiment": sentiment_output,
-        "keywords": keywords
+        "management_sentiment": mgmt_sent,
+        "qa_sentiment": qa_sent,
+        "management_keywords": mgmt_kw,
+        "qa_keywords": qa_kw,
     }
 
     with _CACHE_LOCK:
         _CACHE[key] = result
-
     return result
+
 
 def try_transcript_exists(ticker: str, year: int, quarter: int) -> bool:
     url = (
