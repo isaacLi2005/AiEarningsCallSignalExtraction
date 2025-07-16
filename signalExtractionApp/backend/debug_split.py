@@ -26,7 +26,12 @@ def fetch_transcript(ticker: str, year: int, quarter: int) -> dict:
     r = requests.get(API_URL, params=params, headers={"X-Api-Key": API_KEY})
     if r.status_code != 200:
         raise RuntimeError(f"{r.status_code} {r.reason}\n{r.text[:400]}")
+    
     data = r.json()
+    #print(data.keys())
+    print(data)
+
+
     if isinstance(data, list):                       # sometimes the free tier returns a list
         data = next((d for d in data
                      if d.get("year") == year and d.get("quarter") == quarter),
@@ -38,26 +43,23 @@ def fetch_transcript(ticker: str, year: int, quarter: int) -> dict:
 # Split logic – ONLY first "role":"Analyst"
 # ----------------------------------------------------------------------
 def split_management_qa(resp: dict) -> tuple[str, str]:
-    """
-    Return (prepared, qa).
-    Uses `transcript_split` when present (premium tier);
-    otherwise falls back to a plain‑text search for '"role":"Analyst"'.
-    """
     split = resp.get("transcript_split")
-
-    # ---- preferred: structured list ---------------------------------
     if split:
+        issuer = next(
+            (seg.get("company") for seg in split if seg.get("company")), ""
+        ).lower()
+
         for idx, seg in enumerate(split):
-            if (seg.get("role") or "").lower() == "analyst":
-                prep = " ".join(s["text"] for s in split[:idx]).strip()
-                qa   = " ".join(s["text"] for s in split[idx:]).strip()
-                return prep, qa
-        # no analyst block found
+            comp = (seg.get("company") or "").lower()
+            if issuer and comp and comp != issuer:
+                prepared = " ".join(s["text"] for s in split[:idx]).strip()
+                qa       = " ".join(s["text"] for s in split[idx:]).strip()
+                return prepared, qa
+
         return " ".join(s["text"] for s in split).strip(), ""
 
-    # ---- fallback: free‑tier raw string -----------------------------
     txt = resp.get("transcript", "")
-    m = re.search(r'(?i)"role"\s*:\s*"analyst"', txt)
+    m = re.search(r'(?i)(question[- ]and[- ]answer|q[&/]a|begin the q&a)', txt)
     if m:
         return txt[:m.start()].rstrip(), txt[m.start():].lstrip()
     return txt, ""

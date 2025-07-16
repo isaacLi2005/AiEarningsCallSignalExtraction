@@ -72,44 +72,35 @@ def _chunks(text, size=_MAX_CHARS):
         yield text[i : i + size]
 
 def split_management_qa(resp: dict) -> tuple[str, str]:
-    """
-    Return (prepared, qa).
-    Uses `transcript_split` when present (premium tier);
-    otherwise falls back to a plain‑text search for '"role":"Analyst"'.
-    """
     split = resp.get("transcript_split")
-
-    # ---- preferred: structured list ---------------------------------
     if split:
+        issuer = next(
+            (seg.get("company") for seg in split if seg.get("company")), ""
+        ).lower()
+
         for idx, seg in enumerate(split):
-            if (seg.get("role") or "").lower() == "analyst":
-                prep = " ".join(s["text"] for s in split[:idx]).strip()
-                qa   = " ".join(s["text"] for s in split[idx:]).strip()
-                return prep, qa
-        # no analyst block found
+            comp = (seg.get("company") or "").lower()
+            if issuer and comp and comp != issuer:
+                prepared = " ".join(s["text"] for s in split[:idx]).strip()
+                qa       = " ".join(s["text"] for s in split[idx:]).strip()
+                return prepared, qa
+
         return " ".join(s["text"] for s in split).strip(), ""
 
-    # ---- fallback: free‑tier raw string -----------------------------
     txt = resp.get("transcript", "")
-    m = re.search(r'(?i)"role"\s*:\s*"analyst"', txt)
+    m = re.search(r'(?i)(question[- ]and[- ]answer|q[&/]a|begin the q&a)', txt)
     if m:
         return txt[:m.start()].rstrip(), txt[m.start():].lstrip()
     return txt, ""
-
-
 
 def run_sentiment(text: str) -> float:
 
     scores = []
 
     for chunk in _chunks(text, size=2000): 
-        chunk_start_time = time.time()
-
         result = _finbert(chunk[:512])[0]    
 
         s = sum(_LABEL2VAL[d["label"]] * d["score"] for d in result)
-
-
 
         scores.append(s)
 

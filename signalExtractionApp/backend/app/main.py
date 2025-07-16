@@ -34,7 +34,6 @@ app.add_middleware(
 def ping():
     return {"message": f"pong, API key is {API_NINJAS_API_KEY}"}
 
-@app.get("/transcript")
 def transcript(
     ticker: str = Query("NVDA"),
     year: int = Query(...),
