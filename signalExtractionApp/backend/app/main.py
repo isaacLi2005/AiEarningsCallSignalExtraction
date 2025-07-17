@@ -30,10 +30,6 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-@app.get("/ping")
-def ping():
-    return {"message": f"pong, API key is {API_NINJAS_API_KEY}"}
-
 def transcript(
     ticker: str = Query("NVDA"),
     year: int = Query(...),
@@ -145,7 +141,7 @@ def guess_latest_quarters(ticker="NVDA", n=4) -> list[tuple[int, int]]:
     else:
         raise HTTPException(status_code=400, detail="Could not find 4 most recent quarters.")
     
-@app.get("/analyze_last_four_quarters_sentiment")
+@app.get("/analyze_last_n_quarters_sentiment")
 def analyze_last_n_quarters_sentiment(
     ticker: str = Query("NVDA"),
     year: int | None = Query(None),
@@ -189,4 +185,8 @@ def analyze_last_n_quarters_sentiment(
         }
     }
     return result
+
+@app.get("/ping")
+def ping():
+    return {"response": "pong"}
 

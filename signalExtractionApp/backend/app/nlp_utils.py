@@ -5,15 +5,19 @@ NVDA earnings call transcript.
 
 import re
 from typing import List
-
 import os
+import json
+
+
 from dotenv import load_dotenv
 from keybert import KeyBERT
 from sentence_transformers import SentenceTransformer
+import google.generativeai as genai
+
 
 from transformers import pipeline
 
-import time
+
 
 _finbert = pipeline(
     "sentiment-analysis",
@@ -22,8 +26,9 @@ _finbert = pipeline(
     truncation=True,
     max_length=512) 
 
-_LABEL2VAL = {"positive": 1.0, "negative": -1.0, "neutral": 0.0,
-              "Positive": 1.0, "Negative": -1.0, "Neutral": 0.0}
+# _kw_model = KeyBERT("sentence-transformers/all-MiniLM-L6-v2")
+
+_LABEL2VAL = {"positive": 1.0, "negative": -1.0, "neutral": 0.0}
 
 
 _END_PUNCT = re.compile(r"(?<=[.!?])\s+")
@@ -47,6 +52,8 @@ _QA_CUE = re.compile(
 _MAX_CHARS = 70000 
 
 kw_model = KeyBERT(SentenceTransformer("all-MiniLM-L6-v2"))
+genai.configure(api_key=os.getenv("GOOGLE_GEMINI_KEY"))
+_GEMINI = genai.GenerativeModel("gemini-1.5-flash")
 
 # regex helpers
 _META_JSON   = re.compile(r"\{[^{}]*}")                         # {"company": …}
@@ -100,17 +107,36 @@ def run_sentiment(text: str) -> float:
     for chunk in _chunks(text, size=2000): 
         result = _finbert(chunk[:512])[0]    
 
-        s = sum(_LABEL2VAL[d["label"]] * d["score"] for d in result)
+        s = sum(_LABEL2VAL[d["label"].lower()] * d["score"] for d in result)
 
         scores.append(s)
 
     return sum(scores) / len(scores)
 
-def extract_keywords(text: str, top_n: int = 10):
-    kws = kw_model.extract_keywords(
-        text,
-        keyphrase_ngram_range=(1, 3),
-        stop_words=None,
-        top_n=top_n
-    )
-    return [{"phrase": k, "score": round(s,3)} for k,s in kws]
+def extract_keywords(text: str, top_n: int = 3):
+    prompt = f"""
+        You are a discerning financial analyst. 
+        Read the following chunk of a transcript from an earnings call 
+        and come up with a list of between {top_n} to {top_n + 2} of the 
+        key themes, initiatives, or strategic focuses emphasized within. 
+        The target is to find pertinent topics for the quarter, rather than
+        procedural or generic bookeeping phrases. 
+        The response should be all lower-case, with the focuses separated 
+        by a comma and a space, ready to be printed out to a viewer. 
+
+        Text is here:
+
+        {text}
+    """
+    try:
+        resp = _GEMINI.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0,
+                "response_mime_type": "application/json"
+            }
+        )
+        return json.loads(resp.text) 
+    except Exception as e:
+        print(f"[Gemini fallback] Keyword extraction failed: {e}")
+        return []
