@@ -1,0 +1,24 @@
+.
+├── signalExtractionApp
+│   ├── README.md
+│   ├── backend
+│   │   ├── Dockerfile
+│   │   ├── app
+│   │   ├── debug_split.py
+│   │   ├── hf_cache
+│   │   └── requirements.txt
+│   └── frontend
+│       ├── README.md
+│       ├── eslint.config.js
+│       ├── index.html
+│       ├── package-lock.json
+│       ├── package.json
+│       ├── public
+│       ├── src
+│       ├── tsconfig.app.json
+│       ├── tsconfig.json
+│       ├── tsconfig.node.json
+│       └── vite.config.ts
+└── structure.txt
+
+8 directories, 14 files

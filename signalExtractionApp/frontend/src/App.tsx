@@ -1,16 +1,16 @@
 import {useEffect, useState} from "react";
 
-const backendURL = import.meta.env.VITE_APP_BACKEND_URL
+const backendURL = import.meta.env.VITE_BACKEND_URL
 
 function App() {
   const [msg, setMsg] = useState<string> ("loading...");
 
   useEffect(
     () => {
-      fetch(`${backendURL}/ping`)
+      fetch(`${backendURL}/analyze_last_n_quarters_sentiment?ticker=NVDA&n=4`)
         .then((res) => res.json())
         .then((data)=> {
-          setMsg(data.response);
+          setMsg(data.results);
         })
         .catch((error) => {
           console.error("Error contacting backend: ", error);
@@ -25,7 +25,7 @@ function App() {
       <h1> PUSH THE BUTTON </h1>
       <MyButton />
 
-      <h2> {msg} </h2>
+      <h2> {JSON.stringify(msg, null, 2)} </h2>
     </div>
   )
 }
