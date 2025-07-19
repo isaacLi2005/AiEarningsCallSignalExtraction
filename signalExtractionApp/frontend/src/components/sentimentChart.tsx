@@ -13,7 +13,7 @@ type Props = {
 function SentimentChart({ data }: Props) {
   return (
     <div>
-        <ResponsiveContainer aspect={1.2}>
+        <ResponsiveContainer aspect={1.8}>
         <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="quarter" />
