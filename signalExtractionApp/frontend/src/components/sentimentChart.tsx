@@ -10,18 +10,22 @@ type Props = {
   }[];
 };
 
-export default function SentimentChart({ data }: Props) {
+function SentimentChart({ data }: Props) {
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="quarter" />
-        <YAxis domain={[0, 1]} />
-        <Tooltip />
-        <Legend />
-        <Bar dataKey="management" fill="#8884d8" name="Management" />
-        <Bar dataKey="qa" fill="#82ca9d" name="Q&A" />
-      </BarChart>
-    </ResponsiveContainer>
+    <div>
+        <ResponsiveContainer aspect={1.2}>
+        <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="quarter" />
+            <YAxis domain={[0, 1]} />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="management" fill="#8884d8" name="Management" label={{ position: "top", formatter: (value) => (value as number).toFixed(2) }} />
+            <Bar dataKey="qa" fill="#82ca9d" name="Q&A" label={{ position: "top", formatter: (value) => (value as number).toFixed(2) }} />
+        </BarChart>
+        </ResponsiveContainer>
+    </div>
   );
 }
+
+export default SentimentChart
