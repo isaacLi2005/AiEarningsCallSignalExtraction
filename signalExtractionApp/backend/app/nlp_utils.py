@@ -17,16 +17,12 @@ import google.generativeai as genai
 
 from transformers import pipeline
 
-
-
 _finbert = pipeline(
     "sentiment-analysis",
     model="yiyanghkust/finbert-tone",
     top_k=None,
     truncation=True,
     max_length=512) 
-
-# _kw_model = KeyBERT("sentence-transformers/all-MiniLM-L6-v2")
 
 _LABEL2VAL = {"positive": 1.0, "negative": -1.0, "neutral": 0.0}
 
@@ -124,8 +120,10 @@ def extract_keywords(text: str, top_n: int = 3):
         very important topics. 
         The target is to find pertinent topics for the quarter, rather than
         procedural or generic bookeeping phrases. 
-        The response should be all lower-case, with the focuses separated 
-        by a comma and a space, ready to be printed out to a viewer. 
+        The response should have the focuses separated 
+        by a comma and a space, ready to be printed out to a viewer in bullet points. Remember to capitalize
+        the first letters as if they are sentences, but do not add any punctuation. Remember to also capitalize
+        names of products if they are capitalized, for example "F-35" the fighter jet rather than "f-35".
 
         Text is here:
 
