@@ -42,7 +42,7 @@ def transcript(
 
 
 
-_CACHE: LRUCache[str, dict] = LRUCache(maxsize=32)
+_CACHE: LRUCache[str, dict] = LRUCache(maxsize=128)
 _CACHE_LOCK = Lock()
 def _cache_key(ticker: str, year: int, quarter: int) -> str:
     return f"{ticker.upper()}:{year}:Q{quarter}"

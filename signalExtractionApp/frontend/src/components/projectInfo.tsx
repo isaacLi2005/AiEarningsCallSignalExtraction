@@ -60,8 +60,9 @@ const ProjectInfo: React.FC = () => (
 
         <p>
             To use the project, simply head on over to the "Data" tab by clicking the button in the 
-            top left, enter a ticker you'd like to see the analysis for, and click "Submit"! Some 
-            tickers are already suggested, but you can also type one of your own in as well!
+            top left, enter a ticker you'd like to see the analysis for, and click "Submit"! Some suggested
+            tickers are already suggested in the dropdown, but you can also type one of your own in as well
+            with the "Other" option.
         </p>
     </section>
 
@@ -102,8 +103,8 @@ const ProjectInfo: React.FC = () => (
     <section style={{ marginTop: "1.5rem" }}>
     <h5 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>Frontend: TypeScript and React</h5>
     <ul style={{ paddingLeft: "1.25rem", listStyleType: "disc" }}>
-        <li> Vite: Fast development server and build tools </li>
-        <li> Recharts: Graphing library for visualizing the sentiments data </li>
+        <li> Vite: Fast development server and build tools. </li>
+        <li> Recharts: Graphing library for visualizing the sentiments data. </li>
     </ul>
 
     <h5 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>Backend: Python and FastAPI</h5>
