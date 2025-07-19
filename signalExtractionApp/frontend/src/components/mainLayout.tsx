@@ -14,7 +14,7 @@ function SentimentAndKeywordsLayoutBuilder({
 }: SentimentAndKeywordsLayoutProps) {
     return (
         <main style={{ padding: "1rem", fontFamily: "sans-serif" }}>
-            <h1>AI Earnings Signal</h1>
+            <h1> Earnings Call Sentiment and Keywords </h1>
 
             <TickerSelectForm onSubmit={handleTickerSubmit} />
 
