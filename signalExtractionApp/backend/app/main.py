@@ -3,24 +3,20 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
 import requests
-from datetime import datetime, timezone
-
-
-
-load_dotenv()
-API_NINJAS_API_KEY = os.getenv("API_NINJAS_KEY")
-
-from app import nlp_utils
-
+from datetime import datetime, timedelta, timezone
+import asyncio
 
 import time
 from cachetools import LRUCache
 from threading import Lock
-import typing
 from typing import List, Tuple
 
+from app import nlp_utils
 
 app = FastAPI()
+
+load_dotenv()
+API_NINJAS_API_KEY = os.getenv("API_NINJAS_KEY")
 
 app.add_middleware(
     CORSMiddleware,
@@ -98,6 +94,30 @@ def analyze_sentiment(ticker: str, year: int, quarter: int):
         _CACHE[key] = result
     return result
 
+SECONDS_IN_WEEK = 7 * 24 * 60 * 60
+async def weekly_reset_loop() -> None:
+    """
+    A background task that clears the cache every week. 
+    Waits until Sunday first. 
+    """
+    while True:
+        now = datetime.now(timezone.utc)
+
+        days_until_sunday = (6 - now.weekday()) % 7
+        next_reset = (
+            now
+            + timedelta(days=days_until_sunday)
+        ).replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if next_reset <= now:
+            next_reset += timedelta(seconds=SECONDS_IN_WEEK)
+
+        await asyncio.sleep((next_reset - now).total_seconds())
+
+        with _CACHE_LOCK:
+            _CACHE.clear()
+
+        await asyncio.sleep(SECONDS_IN_WEEK)
 
 def try_transcript_exists(ticker: str, year: int, quarter: int) -> bool:
     url = (
@@ -185,6 +205,10 @@ def analyze_last_n_quarters_sentiment(
         }
     }
     return result
+
+@app.on_event("startup")
+async def start_background_tasks() -> None:
+    asyncio.create_task(weekly_reset_loop())
 
 @app.get("/ping")
 def ping():
