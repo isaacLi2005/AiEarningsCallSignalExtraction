@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import SentimentAndKeywordsLayoutBuilder from "./components/mainLayout";
 import SentimentChart from "./components/sentimentChart";
