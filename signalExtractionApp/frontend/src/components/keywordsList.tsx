@@ -2,7 +2,7 @@ type Props = {
   data: Record<string, any>;
 };
 
-export default function KeywordsList({ data }: Props) {
+function KeywordsList({ data }: Props) {
   return (
     <div style={{ paddingLeft: "1rem" }}>
       {Object.entries(data).map(([quarter, entry]) => {
@@ -48,3 +48,5 @@ export default function KeywordsList({ data }: Props) {
     </div>
   );
 }
+
+export default KeywordsList;

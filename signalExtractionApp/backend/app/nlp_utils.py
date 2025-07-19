@@ -119,6 +119,9 @@ def extract_keywords(text: str, top_n: int = 3):
         Read the following chunk of a transcript from an earnings call 
         and come up with a list of between {top_n} to {top_n + 2} of the 
         key themes, initiatives, or strategic focuses emphasized within. 
+        Prefer to keep closer to {top_n} rather than {top_n + 2}, the extra one or
+        two should only be used if there are actually {top_n + 1} to {top_n + 2} 
+        very important topics. 
         The target is to find pertinent topics for the quarter, rather than
         procedural or generic bookeeping phrases. 
         The response should be all lower-case, with the focuses separated 

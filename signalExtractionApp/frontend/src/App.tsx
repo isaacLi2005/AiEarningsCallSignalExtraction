@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 
-import TickerSelectForm from "./components/tickerSelect";
-import SentimentChart   from "./components/sentimentChart";
-import KeywordsList     from "./components/keywordsList";
+import SentimentAndKeywordsLayoutBuilder from "./components/mainLayout";
+import SentimentChart from "./components/sentimentChart";
+import KeywordsList from "./components/keywordsList";
+import ProjectInfo from "./components/projectInfo";
 
 const backendURL = import.meta.env.VITE_BACKEND_URL;
 
@@ -26,7 +27,6 @@ function App() {
     fetchTickerData(ticker);
   }
 
-  /* ----------  render prep  ---------- */
   let sentimentContent, keywordContent;
   if (typeof backendResult === "object" && backendResult !== null) {
     const sentimentChartData = Object.entries(backendResult).map(
@@ -43,40 +43,74 @@ function App() {
     keywordContent   = <p>😺</p>;
   }
 
-  /* ----------  JSX  ---------- */
+
+  const [currentTab, setCurrentTab] = useState("Data");
+
+
   return (
-    <main style={{ padding: "1rem", fontFamily: "sans-serif" }}>
-      <h1>AI Earnings Signal</h1>
+    <div
+      style={{
+        /* full-height flex column lets us pin the header and scroll the main area */
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        fontFamily: "system-ui, sans-serif",
+      }}
+    >
 
-      <TickerSelectForm onSubmit={handleTickerSubmit} />
-
-      {/* full‑width two‑column layout */}
-      <section
+      {/* ① FIXED / STICKY HEADER  ──────────────────────────────── */}
+      <header
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr", // 50 % | 50 %
-          gap: "1.5rem",
-          width: "100%",                  // use entire row
+          position: "sticky",  /* becomes fixed once you scroll past it */
+          top: 0,
+          left: 0,
+          zIndex: 1000,
+          padding: "0.75rem 1rem",
         }}
       >
-        {/* chart, left half */}
-        <div style={{ minWidth: 0 }}>{sentimentContent}</div>
+        <nav style={{ display: "flex", gap: "1rem" }}>
+          {["Data", "About"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setCurrentTab(tab as "Data" | "About")}
+              style={{
+                fontWeight: currentTab === tab ? 600 : 400,
+                padding: "0.25rem 0.75rem",
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+              }}
+            >
+              {tab}
+            </button>
+          ))}
+        </nav>
+      </header>
 
-        {/* keywords, right half */}
-        <div
-          style={{
-            minWidth: 0,
-            maxHeight: "50vh",
-            overflowY: "auto",
-            paddingLeft: "1rem",
-          }}
-        >
-          {keywordContent}
-        </div>
-      </section>
-    </main>
+      {/* ② MAIN SCROLL AREA  ───────────────────────────────────── */}
+      <main
+        style={{
+          flex: 1,                  /* fill the rest of the viewport */
+          overflowY: "auto",
+          padding: "1.5rem",
+          /* give every panel at least some height so the footer (if any)
+             doesn’t jump when you switch to a short section */
+          minHeight: "60vh",
+        }}
+      >
+        {currentTab === "Data" ? (
+          <SentimentAndKeywordsLayoutBuilder
+            handleTickerSubmit={handleTickerSubmit}
+            sentimentContent={sentimentContent}
+            keywordContent={keywordContent}
+          />
+        ) : (
+          /* No margin hacks needed; header already provides spacing */
+          <ProjectInfo />
+        )}
+      </main>
+    </div>
   );
-
 }
 
 export default App;
