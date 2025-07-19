@@ -11,6 +11,9 @@ function App() {
   const [backendResult, setBackendResult] = useState<string | object>(
     "Waiting for ticker selection…"
   );
+  const[ticker, setTicker] = useState<string>(""); 
+  const [currentTab, setCurrentTab] = useState("Data");
+
 
   function fetchTickerData(ticker: string) {
     setBackendResult("Loading…");
@@ -25,6 +28,7 @@ function App() {
 
   function handleTickerSubmit(ticker: string) {
     fetchTickerData(ticker);
+    setTicker(ticker)
   }
 
   let sentimentContent, keywordContent;
@@ -36,15 +40,12 @@ function App() {
         qa: entry.qa_sentiment,
       })
     );
-    sentimentContent = <SentimentChart data={sentimentChartData} />;
+    sentimentContent = <SentimentChart ticker={ticker} data={sentimentChartData} />;
     keywordContent   = <KeywordsList  data={backendResult}        />;
   } else {
     sentimentContent = <p>{backendResult ?? "Please select a ticker."}</p>;
     keywordContent   = <p>😺</p>;
   }
-
-
-  const [currentTab, setCurrentTab] = useState("Data");
 
 
   return (
@@ -58,10 +59,9 @@ function App() {
       }}
     >
 
-      {/* ① FIXED / STICKY HEADER  ──────────────────────────────── */}
       <header
         style={{
-          position: "sticky",  /* becomes fixed once you scroll past it */
+          position: "sticky",  
           top: 0,
           left: 0,
           zIndex: 1000,
@@ -87,14 +87,11 @@ function App() {
         </nav>
       </header>
 
-      {/* ② MAIN SCROLL AREA  ───────────────────────────────────── */}
       <main
         style={{
-          flex: 1,                  /* fill the rest of the viewport */
+          flex: 1,                  
           overflowY: "auto",
           padding: "1.5rem",
-          /* give every panel at least some height so the footer (if any)
-             doesn’t jump when you switch to a short section */
           minHeight: "60vh",
         }}
       >
@@ -105,7 +102,6 @@ function App() {
             keywordContent={keywordContent}
           />
         ) : (
-          /* No margin hacks needed; header already provides spacing */
           <ProjectInfo />
         )}
       </main>
