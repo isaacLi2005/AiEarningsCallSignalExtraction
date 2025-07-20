@@ -161,6 +161,10 @@ def guess_latest_quarters(ticker="NVDA", n=4) -> list[tuple[int, int]]:
     else:
         raise HTTPException(status_code=400, detail="Could not find 4 most recent quarters.")
     
+@app.get("/")
+def root():
+    return {"status": "ok"}
+    
 @app.get("/analyze_last_n_quarters_sentiment")
 def analyze_last_n_quarters_sentiment(
     ticker: str = Query("NVDA"),
