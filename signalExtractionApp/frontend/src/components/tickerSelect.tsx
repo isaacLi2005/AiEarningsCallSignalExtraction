@@ -4,7 +4,7 @@ type Props = {
     onSubmit: (ticker: string) => void;
 }
 
-const defaultTickers = ["NVDA", "AAPL", "MSFT", "GOOG", "AMD", "Other"]
+const defaultTickers = ["NVDA", "AAPL", "MSFT", "GOOG", "Other"]
 
 function tickerSelectForm({onSubmit}: Props): JSX.Element {
     const [selected, setSelected] = useState("NVDA");
