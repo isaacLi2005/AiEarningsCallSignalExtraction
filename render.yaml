@@ -3,6 +3,6 @@ services:
     name: fastapi-backend
     env: docker
     plan: starter
-    dockerContext: signalExtractionApp/backend
-    dockerfilePath: Dockerfile
+    dockerContext: .
+    dockerfilePath: signalExtractionApp/backend/Dockerfile
     autoDeploy: true
