@@ -52,6 +52,7 @@ def analyze_sentiment(ticker: str, year: int, quarter: int):
 
     with _CACHE_LOCK:
         if key in _CACHE:
+            print(f"[CACHE HIT] {key}")
             return _CACHE[key]
 
     url = f"https://api.api-ninjas.com/v1/earningstranscript?ticker={ticker}&year={year}&quarter={quarter}"
