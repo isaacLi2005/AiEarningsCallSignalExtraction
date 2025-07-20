@@ -6,7 +6,7 @@ WORKDIR /app
 
 # ── Copy & install dependencies from the backend folder
 COPY signalExtractionApp/backend/requirements.txt .
-RUN pip install --no‑cache‑dir --extra‑index‑url https://download.pytorch.org/whl/cpu -r requirements.txt
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 
 # ── (Optional) Pre‑download FinBERT at build time if you want it cached in the image
 RUN python - <<EOF
