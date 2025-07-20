@@ -4,5 +4,5 @@ services:
     env: docker
     plan: starter
     dockerContext: signalExtractionApp/backend
-    dockerfilePath: signalExtractionApp/backend/Dockerfile
+    dockerfilePath: Dockerfile
     autoDeploy: true
