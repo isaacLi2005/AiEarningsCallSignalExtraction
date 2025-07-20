@@ -13,7 +13,7 @@ This web application analyzes recent earnings call transcripts from publicly tra
 
 ---
 
-## 🛠️ How to Run Locally
+## How to Run Locally
 
 ### 1. Clone the Repository
 
