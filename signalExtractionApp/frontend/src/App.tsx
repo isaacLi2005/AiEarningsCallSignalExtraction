@@ -16,7 +16,7 @@ function App() {
 
 
   function fetchTickerData(ticker: string) {
-    setBackendResult("Loading…");
+    setBackendResult("Loading... If uncached, may take 3-5 minutes to run sentiment model, apologies!");
     const url = `${backendURL}/analyze_last_n_quarters_sentiment?ticker=${ticker}&n=4`;
     console.log("🔍 Fetching from backend URL:", url); // <--- This line helps debug
 

@@ -209,13 +209,19 @@ def analyze_last_n_quarters_sentiment(
             print(f"[SKIPPED] {ticker} {y}-Q{q}: {e.detail}")
             continue
 
+    sorted_results = sorted(
+        zip(actual_quarters, nlp_results),
+        key=lambda pair: pair[0][0] * 10 + pair[0][1]  # sort by year * 10 + quarter
+    )
+
     result = {
         "ticker": ticker,
         "results": {
             f"{y}-Q{q}": result
-            for (y, q), result in zip(actual_quarters, nlp_results)
+            for (y, q), result in sorted_results
         }
     }
+    
     return result
 
 @app.on_event("startup")
