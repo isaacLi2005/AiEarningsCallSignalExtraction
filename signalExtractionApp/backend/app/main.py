@@ -145,20 +145,20 @@ def guess_latest_quarters(ticker="NVDA", n=4) -> list[tuple[int, int]]:
     today = datetime.now(timezone.utc)
     q = (today.month - 1) // 3 + 1
     y = today.year
-    quarters = []
+    quarters: list[tuple[int,int]] = []
 
-    for _ in range(n * 2):  # Try more in case some are missing
-        try_q = (y, q)
+    for _ in range(n * 2):
         if try_transcript_exists(ticker, y, q):
-            quarters.append(try_q)
+            quarters.append((y, q))
             if len(quarters) == n:
                 break
         q -= 1
         if q == 0:
             q = 4
             y -= 1
-    if len(quarters) == n:
-        return quarters
+
+    # **Always return what you have** — even if it's 0, 1, 2, 3, or 4
+    return quarters
     
 @app.get("/")
 def root():
