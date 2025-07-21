@@ -17,11 +17,14 @@ function App() {
 
   function fetchTickerData(ticker: string) {
     setBackendResult("Loading…");
-    fetch(`${backendURL}/analyze_last_n_quarters_sentiment?ticker=${ticker}&n=4`)
+    const url = `${backendURL}/analyze_last_n_quarters_sentiment?ticker=${ticker}&n=4`;
+    console.log("🔍 Fetching from backend URL:", url); // <--- This line helps debug
+
+    fetch(url)
       .then((res) => res.json())
       .then((data) => setBackendResult(data.results))
       .catch((err) => {
-        console.error("Error contacting backend:", err);
+        console.error("❌ Error contacting backend:", err);
         setBackendResult("Backend unreachable or error.");
       });
   }

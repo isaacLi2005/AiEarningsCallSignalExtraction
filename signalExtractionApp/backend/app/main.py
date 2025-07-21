@@ -159,8 +159,6 @@ def guess_latest_quarters(ticker="NVDA", n=4) -> list[tuple[int, int]]:
             y -= 1
     if len(quarters) == n:
         return quarters
-    else:
-        raise HTTPException(status_code=400, detail="Could not find 4 most recent quarters.")
     
 @app.get("/")
 def root():
@@ -183,9 +181,11 @@ def analyze_last_n_quarters_sentiment(
     if (year is None) != (quarter is None):
         raise HTTPException(400, "year and quarter must be provided together (or neither).")
 
-    if (year is None):
-        assert(quarter is None)
+    if year is None and quarter is None:
         latest_quarters_list = guess_latest_quarters(ticker=ticker, n=n)
+        if not latest_quarters_list:
+            # no data at all
+            raise HTTPException(404, f"No transcripts found for {ticker}.")
     else:
         y, q = year, quarter
         latest_quarters_list = []
