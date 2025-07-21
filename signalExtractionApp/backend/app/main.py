@@ -198,15 +198,22 @@ def analyze_last_n_quarters_sentiment(
         latest_quarters_list.reverse()
     
     nlp_results = []
-    for i in range(n):
-        (y, q) = latest_quarters_list[i]
-        nlp_results.append(analyze_sentiment(ticker, y, q))
+    actual_quarters = []
+
+    for y, q in latest_quarters_list:
+        try:
+            result = analyze_sentiment(ticker, y, q)
+            nlp_results.append(result)
+            actual_quarters.append((y, q))
+        except HTTPException as e:
+            print(f"[SKIPPED] {ticker} {y}-Q{q}: {e.detail}")
+            continue
 
     result = {
         "ticker": ticker,
         "results": {
-            f"{y}-Q{q}": nlp_results[i]
-            for i, (y, q) in enumerate(latest_quarters_list)
+            f"{y}-Q{q}": result
+            for (y, q), result in zip(actual_quarters, nlp_results)
         }
     }
     return result
