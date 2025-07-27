@@ -17,6 +17,9 @@ import google.generativeai as genai
 
 from transformers import pipeline
 
+from fastapi import HTTPException       
+
+
 _finbert = pipeline(
     "sentiment-analysis",
     model="yiyanghkust/finbert-tone",
@@ -106,6 +109,12 @@ def run_sentiment(text: str) -> float:
         s = sum(_LABEL2VAL[d["label"].lower()] * d["score"] for d in result)
 
         scores.append(s)
+
+    if len(scores) == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="FinBERT returned no scores for this transcript. I am on a free version, so sometimes the transcript becomes unavailable :("
+        )
 
     return sum(scores) / len(scores)
 
