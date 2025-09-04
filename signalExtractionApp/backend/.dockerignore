@@ -3,3 +3,9 @@ __pycache__/
 .venv/
 tests/
 data/
+.git
+__pycache__/
+*.pyc
+.env
+node_modules/
+venv/
