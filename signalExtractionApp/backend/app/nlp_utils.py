@@ -77,6 +77,7 @@ def _chunks(text, size=_MAX_CHARS):
     for i in range(0, len(text), size):
         yield text[i : i + size]
 
+"""
 def split_management_qa(resp: dict) -> tuple[str, str]:
     split = resp.get("transcript_split")
     if split:
@@ -98,12 +99,82 @@ def split_management_qa(resp: dict) -> tuple[str, str]:
     if m:
         return txt[:m.start()].rstrip(), txt[m.start():].lstrip()
     return txt, ""
+"""
+
+def split_management_qa(resp: dict) -> tuple[str, str]:
+    """
+    Robustly split prepared remarks vs Q&A.
+
+    Accepts:
+      - resp["transcript_split"] as a str, List[str], or List[dict] with keys "text" and optional "company"
+      - falls back to resp["transcript"] if split is missing/empty
+
+    Returns:
+      (prepared_text, qa_text)
+    """
+    split = resp.get("transcript")
+
+    # Normalize split into a list of {"text": str, "company": Optional[str]}
+    norm: List[dict] = []
+    if isinstance(split, str):
+        norm = [{"text": split, "company": ""}]
+    elif isinstance(split, list):
+        for item in split:
+            if isinstance(item, dict):
+                text = item.get("text") or item.get("content") or ""
+                company = item.get("company") or item.get("issuer") or ""
+                if text:
+                    norm.append({"text": text, "company": company})
+            elif isinstance(item, str):
+                norm.append({"text": item, "company": ""})
+            # else: ignore unknown types
+    elif split is not None:
+        # Unexpected type; coerce to string
+        norm = [{"text": str(split), "company": ""}]
+
+    if norm:
+        # Try issuer boundary heuristic first
+        issuer = next(( (s.get("company") or "").lower()
+                        for s in norm if (s.get("company") or "").strip() ),
+                      "")
+
+        if issuer:
+            for idx, seg in enumerate(norm):
+                comp = (seg.get("company") or "").lower()
+                # first occurrence of a *different* non-empty company => Q&A start
+                if comp and comp != issuer:
+                    prepared = " ".join(s["text"] for s in norm[:idx]).strip()
+                    qa       = " ".join(s["text"] for s in norm[idx:]).strip()
+                    return prepared, qa
+
+        # No clear company switch; try regex cue within concatenated text
+        all_text = " ".join(s["text"] for s in norm).strip()
+        m = _QA_CUE.search(all_text) or re.search(r'(?i)(question[- ]and[- ]answer|q[&/]a|begin the q&a)', all_text)
+        if m:
+            return all_text[:m.start()].rstrip(), all_text[m.start():].lstrip()
+        return all_text, ""
+
+    # Fallback to raw transcript
+    txt = resp.get("transcript", "")
+    if not isinstance(txt, str):
+        txt = str(txt)
+    m = _QA_CUE.search(txt) or re.search(r'(?i)(question[- ]and[- ]answer|q[&/]a|begin the q&a)', txt)
+    if m:
+        return txt[:m.start()].rstrip(), txt[m.start():].lstrip()
+    return txt, ""
 
 def run_sentiment(text: str) -> float:
 
     scores = []
 
+
     for chunk in _chunks(text, size=2000): 
+
+        print()
+        print()
+        print("HERE IS A CHUNK")
+        print(chunk)
+
         result = _finbert(chunk[:512])[0]    
 
         s = sum(_LABEL2VAL[d["label"].lower()] * d["score"] for d in result)
